@@ -1,0 +1,127 @@
+Application Settings
+Configure environment variables in Azure:
+
+In VS Code: Right-click Function App → Application Settings → Add New Setting
+Azure Portal: Configuration → Application settings
+Azure CLI: az functionapp config appsettings set
+
+Connection Strings and Secrets
+Use Azure Key Vault for sensitive data:
+python#
+Reference Key Vault secret in code
+import os
+secret = os.environ["MySecret"]
+
+
+In Application Settings:
+@Microsoft.KeyVault(SecretUri=https://myvault.vault.azure.net/secrets/MySecret/)
+
+Monitoring and Logging
+Azure Functions integrates with Application Insights:
+
+python#
+import logging
+
+def main(req):
+    logging.info('Processing request')
+    logging.error('Something went wrong')
+    logging.warning('This is a warning')
+
+
+View logs:
+VS Code: Right-click function → Start Streaming Logs
+Azure Portal: Function App → Monitor → Logs
+Application Insights for advanced analytics
+
+Common Function Patterns
+HTTP Trigger with Database Access
+python#
+import azure.functions as func
+import pyodbc
+import os
+
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    conn_str = os.environ["SqlConnectionString"]
+    
+    with pyodbc.connect(conn_str) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Users")
+        rows = cursor.fetchall()
+    
+    return func.HttpResponse(str(rows))
+
+Timer Trigger (Scheduled Task)
+python#
+import azure.functions as func
+import logging
+from datetime import datetime
+
+def main(mytimer: func.TimerRequest) -> None:
+    utc_timestamp = datetime.utcnow()
+    logging.info(f'Timer trigger executed at {utc_timestamp}')
+    
+    # Your scheduled task logic here
+
+
+Function.json for timer:
+json{
+  "scriptFile": "__init__.py",
+  "bindings": [
+    {
+      "name": "mytimer",
+      "type": "timerTrigger",
+      "direction": "in",
+      "schedule": "0 */5 * * * *"
+    }
+  ]
+}
+Blob Trigger (Process Uploaded Files)
+
+python#
+import azure.functions as func
+import logging
+
+def main(myblob: func.InputStream):
+    logging.info(f"Processing blob: {myblob.name}")
+    content = myblob.read()
+    
+    # Process file content
+    # e.g., resize image, parse CSV, etc.
+
+
+Best Practices
+Performance:
+
+Keep functions small and focused
+Use async/await for I/O operations
+Minimize cold start times with Premium plan if needed
+Cache connections and reusable objects
+
+Security:
+
+Use managed identities instead of connection strings
+Store secrets in Azure Key Vault
+Use appropriate authorization levels
+Enable CORS only for trusted origins
+
+Development:
+
+Use local.settings.json for local development
+Version control everything except local.settings.json
+Write unit tests for your function logic
+Use Application Insights for monitoring
+
+Cost Optimization:
+
+Start with Consumption plan
+Monitor execution times and optimize
+Use appropriate timeout values
+Consider batching for high-volume scenarios
+
+Troubleshooting Common Issues
+Cold Starts: Functions may take longer on first execution. Solutions include Premium plan, keeping functions warm, or optimizing initialization code.
+Timeout Issues: Increase timeout in host.json or move to Premium/Dedicated plan for longer executions.
+Deployment Failures: Check runtime version matches, ensure all dependencies are in requirements.txt, verify connection strings.
+Authentication Issues: Ensure you're signed in to correct Azure subscription in VS Code, check function key requirements.
+Azure Functions provides a powerful, flexible platform for building serverless applications. The VS Code integration makes development seamless,
+and multiple deployment options give you flexibility in how you ship your code. Start with simple HTTP triggers, then explore other triggers and bindings as your needs grow.
